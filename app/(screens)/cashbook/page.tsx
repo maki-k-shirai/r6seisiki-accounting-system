@@ -266,7 +266,7 @@ useEffect(() => {
 
 {/* 科目レベル選択 */}
 <div className="mt-3 space-y-1">
-  <p className="text-sm font-bold">■科目レベル選択</p>
+  <p className="text-sm font-bold">■最小表示範囲</p>
   <div className="mt-1">
     <GuidedFocus
       active={guideActive}

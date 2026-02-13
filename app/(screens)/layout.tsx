@@ -1,6 +1,7 @@
 // app/(screens)/layout.tsx
 "use client"
 
+import { Suspense } from "react"
 import { AppHeader } from "@/components/common/AppHeader"
 import { SideMenu } from "@/components/menu/SideMenu"
 
@@ -9,6 +10,10 @@ export default function ScreensLayout({
 }: {
   children: React.ReactNode
 }) {
+  const sideMenuFallback = (
+    <div className="w-full min-h-0 flex-1 bg-[#e8eef7]" />
+  )
+
   return (
     <div
       className={
@@ -36,7 +41,9 @@ export default function ScreensLayout({
             "side-menu-root flex w-[260px] flex-col min-h-0 flex-shrink-0"
           }
         >
-          <SideMenu />
+          <Suspense fallback={sideMenuFallback}>
+            <SideMenu />
+          </Suspense>
         </aside>
 
         {/* 右側の業務エリア */}

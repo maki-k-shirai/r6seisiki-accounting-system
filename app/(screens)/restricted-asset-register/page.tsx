@@ -2,6 +2,7 @@
 "use client"
 
 import * as React from "react"
+import { Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -120,7 +121,7 @@ const RequiredMark = ({ required = false }: { required?: boolean }) => (
 
 // ===== ページ本体 =====
 
-export default function RestrictedAssetRegisterPage() {
+function RestrictedAssetRegisterPageContent() {
   const router = useRouter()
   const { openTutorialMenu, stopTutorial } = useTutorial()
   const searchParams = useSearchParams()
@@ -953,5 +954,13 @@ const handleChangeAmountRow = (
         }}
       />
     </main>
+  )
+}
+
+export default function RestrictedAssetRegisterPage() {
+  return (
+    <Suspense fallback={<div className="h-full w-full bg-[#f2f7ff]" />}>
+      <RestrictedAssetRegisterPageContent />
+    </Suspense>
   )
 }

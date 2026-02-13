@@ -1,7 +1,7 @@
 // app/(screens)/cashbook/page.tsx
 "use client"
 
-import { useEffect, useMemo, useRef, useState } from "react"
+import { Suspense, useEffect, useMemo, useRef, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { GuidedFocus } from "@/components/tutorial/GuidedFocus"
 import { FunctionKeyBar } from "@/components/common/FunctionKeyBar"
@@ -20,7 +20,7 @@ import {
   type AccountingParent,
 } from "@/components/account/AccountingSelectModal"
 
-export default function CashBookScreen() {
+function CashBookScreenContent() {
   const [fromAccount, setFromAccount] = useState<PickedAccount | null>(null)
   const [accountDialogOpen, setAccountDialogOpen] = useState(false)
 
@@ -385,5 +385,13 @@ useEffect(() => {
           disabledCodes={[]}
       />
     </div>
+  )
+}
+
+export default function CashBookScreen() {
+  return (
+    <Suspense fallback={<div className="h-full w-full bg-sky-50" />}>
+      <CashBookScreenContent />
+    </Suspense>
   )
 }

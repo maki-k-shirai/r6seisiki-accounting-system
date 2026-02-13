@@ -1,7 +1,0 @@
-{
-  "/(screens)/voucher-entry/page": "app/(screens)/voucher-entry/page.js",
-  "/(screens)/cashbook/page": "app/(screens)/cashbook/page.js",
-  "/(screens)/restricted-asset-register/page": "app/(screens)/restricted-asset-register/page.js",
-  "/(screens)/home/page": "app/(screens)/home/page.js",
-  "/(screens)/restricted-assets-management/page": "app/(screens)/restricted-assets-management/page.js"
-}

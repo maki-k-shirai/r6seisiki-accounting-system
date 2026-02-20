@@ -334,11 +334,11 @@ export function RemarkEntryModal({
             </div>
           )}
 
-          {/* 財源（BS科目のとき非表示） */}
+          {/* 財源コード（BS科目のとき非表示） */}
           {showFundingBlocks && (
             <div className="grid grid-cols-[140px_1fr] border-b border-[#7a9bc4]">
               <div className="border-r border-[#7a9bc4] bg-[#cfe0ff] px-2 py-2 text-[12px] font-medium">
-                財源
+                財源コード
               </div>
               <div className="flex flex-col gap-2 px-2 py-2">
                 {/* コード行 */}
@@ -407,11 +407,11 @@ export function RemarkEntryModal({
             </div>
           )}
 
-          {/* 一般・指定（ラジオボタン） */}
+          {/* 財源区分（ラジオボタン） */}
           {renderFundingTypeRow && (
             <div className="grid grid-cols-[140px_1fr] border-b border-[#7a9bc4]">
               <div className="border-r border-[#7a9bc4] bg-[#cfe0ff] px-2 py-2 text-[12px] font-medium">
-                一般・指定
+                財源区分
               </div>
               <div className="px-2 py-2">
                 <GuidedFocus

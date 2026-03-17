@@ -23,55 +23,40 @@ export function EntranceGuidePanel() {
         aria-hidden="true"
       />
 
-      <div className="relative z-10">
-        <h1 className="text-[30px] font-semibold tracking-tight text-slate-900">
-          {OVERVIEW_GUIDE_CONTENT.title}
-        </h1>
-        {OVERVIEW_GUIDE_CONTENT.subcopy ? (
-          <p className="mt-3 whitespace-pre-line text-[16px] text-slate-700">
-            {OVERVIEW_GUIDE_CONTENT.subcopy}
+      <div className="relative z-10 space-y-5">
+        {/* タイトル＋タグライン */}
+        <div>
+          <h1 className="text-[30px] font-semibold tracking-tight text-slate-900">
+            {OVERVIEW_GUIDE_CONTENT.title}
+          </h1>
+          <p className="mt-2 whitespace-pre-line text-[16px] font-medium leading-relaxed text-[#7D2248]">
+            {OVERVIEW_GUIDE_CONTENT.tagline}
           </p>
-        ) : null}
+        </div>
 
-        <dl className="mt-6 space-y-4">
-          {OVERVIEW_GUIDE_CONTENT.sections.map((section) => (
-            <div
-              key={section.label}
-              className="rounded-lg border border-slate-200/80 bg-white px-3 py-3 shadow-[0_6px_16px_-12px_rgba(15,23,42,0.45)]"
-            >
-              <dt className="text-[18px] font-semibold text-slate-900">
-                {section.label}
-              </dt>
-              {Array.isArray(section.body) ? (
-                <dd className="mt-1 text-[16px] text-slate-700">
-                  <ul className="space-y-1">
-                    {section.body.map((line) => (
-                      <li key={line}>
-                        {"・"}
-                        {line}
-                      </li>
-                    ))}
-                  </ul>
-                </dd>
-              ) : (
-                <dd className="mt-1 text-[16px] text-slate-700">
-                  {section.body}
-                </dd>
-              )}
-            </div>
+        {/* 詳細説明 */}
+        <p className="whitespace-pre-line text-[15px] leading-relaxed text-slate-600">
+          {OVERVIEW_GUIDE_CONTENT.detail}
+        </p>
+
+        {/* 補足 */}
+        <ul className="space-y-1 border-l-2 border-slate-200 pl-4">
+          {OVERVIEW_GUIDE_CONTENT.notes.map((note) => (
+            <li key={note} className="text-[13px] leading-relaxed text-slate-400">
+              {note}
+            </li>
           ))}
-        </dl>
+        </ul>
 
-        {OVERVIEW_GUIDE_CONTENT.helper ? (
-          <div className="mt-6 text-[15px] text-slate-700">
-            {OVERVIEW_GUIDE_CONTENT.helper}
-          </div>
-        ) : null}
-
-        <div className="mt-3">
+        {/* CTAエリア */}
+        <div className="flex flex-col items-start gap-3 border-t border-slate-100 pt-5">
+          <p className="text-[14px] text-slate-500">
+            {OVERVIEW_GUIDE_CONTENT.cta}
+          </p>
           <HeaderTutorialLauncher
             size="lg"
             className="h-12 px-6 text-[16px]"
+            label="変更点を見る"
           />
         </div>
       </div>

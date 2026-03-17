@@ -358,7 +358,7 @@ export function SideMenu() {
               <GuidedFocus
                 key={node.id}
                 active
-                message=""
+                message="使途拘束資産登録画面を開きます"
                 placement="right"
               >
                 {button}

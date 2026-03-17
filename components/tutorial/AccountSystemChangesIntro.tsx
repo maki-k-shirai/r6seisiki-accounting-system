@@ -192,7 +192,9 @@ export function AccountSystemChangesIntro({
               <div className="mt-2 text-sm leading-snug">
                 正式版への移行の際に、
                 <br />
-                収支科目をどちらの体系で構成するかを最初に決めます（マスタ班より確認）。
+                収支科目をどちらの体系で構成するかを最初に決めます。
+                <br />
+                どちらを選ぶかは、会計マスタの設定担当者にご確認ください。
               </div>
             </div>
             <div className="mt-3 flex justify-end">
@@ -232,15 +234,17 @@ export function AccountSystemChangesIntro({
           <span />
         )}
 
-  <Button
-    onClick={onStartTutorial}
-    className="
-      rounded bg-[#7D2248] px-4 py-2 text-sm font-semibold text-white 
-      hover:bg-[#681b3d] transition
-    "
-  >
-    次へ
-  </Button>
+        <div className="flex flex-col items-end gap-1">
+          <Button
+            onClick={onStartTutorial}
+            className="
+              rounded bg-[#7D2248] px-4 py-2 text-sm font-semibold text-white
+              hover:bg-[#681b3d] transition
+            "
+          >
+            次へ
+          </Button>
+        </div>
       </div>
       <PdfPreviewDialog
         open={incomeImageOpen}

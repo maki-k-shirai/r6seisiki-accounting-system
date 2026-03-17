@@ -23,6 +23,7 @@ export function HeaderTutorialLauncher({
   const routes = {
     accountSystemChanges: "/account-system-changes",
     restrictedAssetsManagement: "/restricted-assets-management",
+    migrationNotes: "/migration-notes",
     voucherEntry: "/voucher-entry",
   } as const
 
@@ -97,11 +98,23 @@ export function HeaderTutorialLauncher({
     router.push(routes.restrictedAssetsManagement)
   }
 
+  const handleOpenMigrationNotes = () => {
+    closeTutorialMenu()
+    router.push(routes.migrationNotes)
+  }
+
   const tutorialCardBaseClass =
     "h-full w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 text-left text-[13px] " +
     "shadow-sm transition hover:-translate-y-[1px] hover:border-[#7D2248] hover:bg-white hover:shadow-md"
 
   const tutorialCards = [
+    {
+      title: "移行時の注意点",
+      description:
+        "マスタ設定の引き継ぎルールと、移行後に確認すべき設定項目をまとめています。はじめにご確認ください。",
+      badge: "はじめに",
+      onClick: handleOpenMigrationNotes,
+    },
     {
       title: "科目体系の変更点",
       description:
@@ -194,8 +207,15 @@ export function HeaderTutorialLauncher({
                   onClick={card.onClick}
                   className={tutorialCardBaseClass}
                 >
-                  <div className="mb-1 text-[18px] font-semibold text-slate-900">
-                    {card.title}
+                  <div className="mb-1 flex items-center gap-2">
+                    <span className="text-[18px] font-semibold text-slate-900">
+                      {card.title}
+                    </span>
+                    {"badge" in card && card.badge && (
+                      <span className="rounded-full bg-[#7D2248] px-2 py-0.5 text-[10px] font-semibold text-white">
+                        {card.badge}
+                      </span>
+                    )}
                   </div>
                   <div className="text-[14px] leading-snug text-slate-700">
                     {card.description}

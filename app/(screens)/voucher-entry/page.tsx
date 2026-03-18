@@ -90,6 +90,7 @@ export default function VoucherEntryPage() {
   const [isOtherSecuritiesScenario, setIsOtherSecuritiesScenario] = useState(false)
   const [isOtherSecPreviewGuideActive, setIsOtherSecPreviewGuideActive] =
     useState(false)
+  const [detailTab, setDetailTab] = useState<"primary" | "netAssets">("primary")
 
   // ===== PDF プレビュー（帳票イメージ） =====
   const [isPdfPreviewOpen, setIsPdfPreviewOpen] = useState(false)
@@ -319,11 +320,11 @@ function startFundingRevenueExpenseScenario() {
     // 参ボタン押下後の状態を再現
     setDebitCode("960100")
     setDebitParentName("その他有価証券評価差額金")
-    setDebitChildName("その他有価証券評価差額金（評価損）")
+    setDebitChildName("その他有価証券評価差額金")
     setDebitAmount("1000000")
 
-    setCreditCode("04510101")
-    setCreditParentName("投資有価証券")
+    setCreditCode("045102")
+    setCreditParentName("その他固定資産")
     setCreditChildName("投資有価証券")
     setCreditAmount("1000000")
 
@@ -706,6 +707,8 @@ function onEnterAtDetail() {
     isPL: c.kind === "PL",
   })
 
+  // その他有価証券シナリオは確定と同時に純資産タブへ切り替える
+  setDetailTab(isOtherSecuritiesScenario ? "netAssets" : "primary")
   setPhase("transferPreview")
   setLastEditablePhase("detail")
   //その他有価証券シナリオ：プレビュー到達時に仮方科目へ案内
@@ -1272,7 +1275,7 @@ if (isOtherSecuritiesEnterGuideActive) {
                         指定 →（そのまま）→ 指定純資産の減少として表示
                       </div>
                       <div className="mt-4 font-semibold text-[#1f4e79]">
-                        指定でも“費用科目単位”で減少を示す必要がある
+                        指定でも"費用科目単位"で減少を示す必要がある
                       </div>
                     </div>
                   </div>
@@ -1880,6 +1883,34 @@ if (isOtherSecuritiesEnterGuideActive) {
         className={["mt-3 flex flex-col rounded-[4px] border border-[#7a9bc4] bg-white text-[12px]", phase === "header" ? "opacity-60 pointer-events-none" : ""].join(" ")}
         onKeyDown={handleDetailKeyDown}
       >
+        {/* 1次/純資産タブ（その他有価証券評価差額金シナリオのtransferPreview時のみ） */}
+        {phase === "transferPreview" && isOtherSecuritiesScenario && (
+          <div className="flex border-b border-[#7a9bc4]">
+            <button
+              onClick={() => setDetailTab("primary")}
+              className={[
+                "px-4 py-1 text-[13px] border-r border-[#7a9bc4]",
+                detailTab === "primary"
+                  ? "bg-white font-semibold text-[#1a1a1a]"
+                  : "bg-[#c8d8ed] text-[#555] hover:bg-[#d8e8f8]",
+              ].join(" ")}
+            >
+              1次
+            </button>
+            <button
+              onClick={() => setDetailTab("netAssets")}
+              className={[
+                "px-4 py-1 text-[13px]",
+                detailTab === "netAssets"
+                  ? "bg-white font-semibold text-[#1a1a1a]"
+                  : "bg-[#c8d8ed] text-[#555] hover:bg-[#d8e8f8]",
+              ].join(" ")}
+            >
+              純資産
+            </button>
+          </div>
+        )}
+
         {/* ヘッダー行 */}
         <div className="grid w-full grid-cols-[40px_1fr_1fr] border-b border-[#7a9bc4] bg-[#6d8fc9] text-white" style={{ fontSize: "14px", fontWeight: 600 }}>
           <div className="border-r border-[#7a9bc4] px-2 py-2 flex items-center">No</div>
@@ -2004,12 +2035,12 @@ if (isOtherSecuritiesEnterGuideActive) {
                 // ★ 新規：その他有価証券評価差額金チュートリアル
                 // 指定科目をセット
                 setDebitCode("960100")
-                setDebitParentName("その他有価証券評価差額金") // 親科目なし
-                setDebitChildName("その他有価証券評価差額金（評価損）")
+                setDebitParentName("その他有価証券評価差額金")
+                setDebitChildName("その他有価証券評価差額金")
                 setDebitAmount("10000")
 
-                setCreditCode("04510101")
-                setCreditParentName("投資有価証券")
+                setCreditCode("045102")
+                setCreditParentName("その他固定資産")
                 setCreditChildName("投資有価証券")
                 setCreditAmount("10000")
 
@@ -2039,13 +2070,19 @@ if (isOtherSecuritiesEnterGuideActive) {
         </GuidedFocus>
       </div>
     </>
+  ) : isOtherSecuritiesScenario && (detailTab === "primary" || detailTab === "netAssets") ? (
+    <PreviewAccountLabel
+      code={debitCode}
+      parentName={debitParentName}
+      childName={debitChildName}
+    />
   ) : (
     <>
    {isOtherSecPreviewGuideActive ? (
      <GuidedFocus
        active={true}
        placement="right"
-       message={"財源（一般/指定）に応じて科目を自動展開し、貸借対照表の“うち書き”に反映します。"}
+       message={`財源（一般/指定）に応じて科目を自動展開し、貸借対照表の"うち書き"に反映します。`}
        nextLabel="次へ"
        onNext={() => {
         setIsOtherSecPreviewGuideActive(false)
@@ -2145,6 +2182,12 @@ if (isOtherSecuritiesEnterGuideActive) {
                         参
                       </button>
                     </>
+                  ) : isOtherSecuritiesScenario && (detailTab === "primary" || detailTab === "netAssets") ? (
+<PreviewAccountLabel
+    code={creditCode}
+    parentName={creditParentName}
+    childName={creditChildName}
+  />
                   ) : (
 <PreviewAccountLabel
     code={previewCredit?.code}
@@ -2181,7 +2224,52 @@ if (isOtherSecuritiesEnterGuideActive) {
           </div>
         </div>
 
-        {/* 1行目 下段（摘要など） */}
+        {/* 1行目 下段（純資産タブ：指定純資産科目 / 通常タブ：摘要など） */}
+        {isOtherSecuritiesScenario && detailTab === "netAssets" ? (
+          /* 純資産タブ：指定純資産科目エリア */
+          <div className="grid grid-cols-[40px_1fr_1fr] border-b border-[#7a9bc4] bg-[#eaf3ff]">
+            {/* No列 / 削 */}
+            <div className="flex flex-col items-center justify-end border-r border-[#7a9bc4] bg-[#f2f6fb] text-[13px] text-[#333] py-2">
+              <button className="text-[11px] px-2 py-[2px] border border-[#7a9bc4] rounded-sm bg-[#e9edf5]" disabled>
+                削
+              </button>
+            </div>
+            {/* 借方：指定純資産科目コード＋科目名（固定・非アクティブ・ガイド付き） */}
+            <div className="border-r border-[#7a9bc4] px-2 py-2">
+              <div className="text-[11px] text-[#6b6b6b] mb-1">指定純資産科目</div>
+              <GuidedFocus
+                active={isOtherSecPreviewGuideActive}
+                placement="right"
+                message={`財源（一般/指定）に応じて科目を自動展開し、貸借対照表の"うち書き"に反映します。`}
+                nextLabel="次へ"
+                onNext={() => {
+                  setIsOtherSecPreviewGuideActive(false)
+                  openPdfPreview({
+                    src: "/pdf/bs-of-which-breakdown.pdf",
+                    title: "貸借対照表（うち書き）",
+                    tutorial: {
+                      active: true,
+                      message: "入力した内容に応じて、貸借対照表の純資産の部、その他有価証券評価差額金とうち書きに反映されます。",
+                      primaryLabel: "変更点ガイドへ",
+                      secondaryLabel: "終了",
+                    },
+                  })
+                }}
+              >
+                <div ref={debitPreviewNameRef} tabIndex={-1} className="flex items-center gap-2">
+                  <div className="h-[24px] w-[80px] rounded-[2px] border border-[#7a9bc4] bg-[#f3f3f3] px-2 flex items-center text-[12px] text-[#555] select-none">
+                    109100
+                  </div>
+                  <div className="text-[12px] text-[#333]">
+                    （うち指定純資産に係る評価差額金）
+                  </div>
+                </div>
+              </GuidedFocus>
+            </div>
+            {/* 貸方：空欄 */}
+            <div />
+          </div>
+        ) : (
         <div className="grid grid-cols-[40px_1fr_1fr] border-b border-[#7a9bc4] bg-[#ffffff]">
           {/* No列 / 削 */}
           <div className="flex flex-col items-center justify-end border-r border-[#7a9bc4] bg-[#f2f6fb] text-[13px] text-[#333] py-2">
@@ -2326,6 +2414,7 @@ if (isOtherSecuritiesEnterGuideActive) {
             </button>
           </div>
         </div>
+        )} {/* end of 通常摘要エリア条件分岐 */}
 
         <div className="px-2 py-4 text-[11px] leading-tight text-[#6b6b6b] bg-white border-t border-[#7a9bc4]">
           （この下に明細2行目以降が続く想定）

@@ -12,6 +12,7 @@ import {
   XIcon,
 } from "lucide-react"
 import { HeaderTutorialLauncher } from "@/components/tutorial/HeaderTutorialLauncher"
+import { SpecReviewLauncher } from "@/components/tutorial/SpecReviewLauncher"
 
 type AppHeaderProps = {
   breadcrumb: string
@@ -76,6 +77,8 @@ export function AppHeader({
           <span>ヘルプ(H)</span>
         </button>
 
+        {/* 仕様検討ランチャー */}
+        <SpecReviewLauncher />
         {/* チュートリアルランチャー（必要なときだけ表示） */}
         {showTutorialLauncher && <HeaderTutorialLauncher />}
       </div>

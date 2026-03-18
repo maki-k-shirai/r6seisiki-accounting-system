@@ -26,4 +26,6 @@ export interface TutorialScenario {
   steps: TutorialStep[]
   // どの画面向けのチュートリアルかを絞る用
   targetScreen?: "voucher-entry" | "cash-name-change" | "global" | string
+  // "tutorial": 変更点ガイド / "specReview": 仕様検討
+  mode?: "tutorial" | "specReview"
 }

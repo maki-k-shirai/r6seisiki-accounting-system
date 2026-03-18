@@ -176,6 +176,23 @@ export const rootMenu: SideMenuNode[] = [
     displayName: "4",
     label: "月次処理",
     icon: "folder",
+    children: [
+      {
+        id: "4-1",
+        displayName: "1",
+        label: "正味財産増減計算書",
+        icon: "folder",
+        children: [
+          {
+            id: "4-1-1",
+            displayName: "1",
+            label: "財源区分別内訳",
+            icon: "document",
+            href: "/net-assets-statement",
+          },
+        ],
+      },
+    ],
   },
 
   // 5. 決算処理

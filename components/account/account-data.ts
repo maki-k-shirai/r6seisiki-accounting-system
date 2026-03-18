@@ -1589,8 +1589,7 @@ export const BASIC_ACCOUNT_CATEGORIES: AccountCategory[] = [
       meta: {
         accountTypeCode: "3291",
         accountDetailTypeCode: "959000",
-        // 会計分類は費用だが、科目検索UIでは「純資産科目」タブに表示したい
-        uiTab: "netAssetsPl",
+        // 令和6年基準改正対応：「純資産科目」タブから「損益科目（活動計算書）」タブへ移動
       },
     },
     {

@@ -32,10 +32,15 @@ type TutorialContextValue = {
   nextStep: () => void
   prevStep: () => void
 
-  // ★ チュートリアルメニューの開閉
+  // チュートリアルメニュー（変更点ガイド）
   tutorialMenuOpen: boolean
   openTutorialMenu: () => void
   closeTutorialMenu: () => void
+
+  // 仕様検討メニュー
+  specReviewMenuOpen: boolean
+  openSpecReviewMenu: () => void
+  closeSpecReviewMenu: () => void
 }
 
 const TutorialContext = createContext<TutorialContextValue | null>(null)
@@ -57,16 +62,13 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
     currentStepIndex: 0,
   })
 
-  // ★ メニューの状態
   const [tutorialMenuOpen, setTutorialMenuOpen] = useState(false)
+  const [specReviewMenuOpen, setSpecReviewMenuOpen] = useState(false)
 
-  const openTutorialMenu = useCallback(() => {
-    setTutorialMenuOpen(true)
-  }, [])
-
-  const closeTutorialMenu = useCallback(() => {
-    setTutorialMenuOpen(false)
-  }, [])
+  const openTutorialMenu = useCallback(() => setTutorialMenuOpen(true), [])
+  const closeTutorialMenu = useCallback(() => setTutorialMenuOpen(false), [])
+  const openSpecReviewMenu = useCallback(() => setSpecReviewMenuOpen(true), [])
+  const closeSpecReviewMenu = useCallback(() => setSpecReviewMenuOpen(false), [])
 
   const startTutorial = useCallback(
     (scenario: TutorialScenario) => {
@@ -123,6 +125,9 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
       tutorialMenuOpen,
       openTutorialMenu,
       closeTutorialMenu,
+      specReviewMenuOpen,
+      openSpecReviewMenu,
+      closeSpecReviewMenu,
     }
   }, [
     state,
@@ -133,6 +138,9 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
     tutorialMenuOpen,
     openTutorialMenu,
     closeTutorialMenu,
+    specReviewMenuOpen,
+    openSpecReviewMenu,
+    closeSpecReviewMenu,
   ])
 
   return (
@@ -144,8 +152,9 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
 }
 
 /**
- * v0用の簡易オーバーレイ
- * targetSelector が見つかればその近くに、なければ画面右下に表示
+ * チュートリアル / 仕様検討 共通オーバーレイ
+ * scenario.mode === "specReview" のときは紺色テーマで表示し、
+ * 「仕様検討メニューに戻る」ボタンを出す
  */
 function TutorialOverlay() {
   const {
@@ -156,6 +165,7 @@ function TutorialOverlay() {
     prevStep,
     stopTutorial,
     currentStepIndex,
+    openSpecReviewMenu,
   } = useTutorial()
 
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null)
@@ -165,75 +175,159 @@ function TutorialOverlay() {
       setTargetRect(null)
       return
     }
-    const el = document.querySelector(
-      currentStep.targetSelector,
-    ) as HTMLElement | null
-    if (!el) {
-      setTargetRect(null)
-      return
+    // targetSelector が見つかるまで最大500ms待機（画面遷移後のレンダリング考慮）
+    let attempts = 0
+    const tryFind = () => {
+      const el = document.querySelector(currentStep.targetSelector!) as HTMLElement | null
+      if (el) {
+        setTargetRect(el.getBoundingClientRect())
+      } else if (attempts < 10) {
+        attempts++
+        setTimeout(tryFind, 50)
+      } else {
+        setTargetRect(null)
+      }
     }
-    const rect = el.getBoundingClientRect()
-    setTargetRect(rect)
-  }, [isActive, currentStep?.targetSelector])
+    tryFind()
+  }, [isActive, currentStep?.targetSelector, currentStep?.id])
 
   if (!isActive || !scenario || !currentStep) return null
 
+  const isSpecReview = scenario.mode === "specReview"
   const totalSteps = scenario.steps.length
+  const isFirst = currentStepIndex === 0
+  const isLast = currentStepIndex === totalSteps - 1
 
-  // オーバーレイの位置計算（超ざっくり v0）
+  // オーバーレイ位置
   const style: React.CSSProperties = targetRect
     ? {
         position: "fixed",
-        top: Math.min(targetRect.bottom + 8, window.innerHeight - 200),
-        left: Math.min(targetRect.left, window.innerWidth - 360),
-        zIndex: 2000,
+        top: Math.min(targetRect.bottom + 12, window.innerHeight - 240),
+        left: Math.max(8, Math.min(targetRect.left, window.innerWidth - 380)),
+        zIndex: 11000,
+      }
+    : isSpecReview
+    ? {
+        // specReview はヘッダー直下の右上に固定（ページ本文を隠さない）
+        position: "fixed",
+        top: 72,
+        right: 24,
+        zIndex: 11000,
       }
     : {
         position: "fixed",
         bottom: 24,
         right: 24,
-        zIndex: 2000,
+        zIndex: 11000,
+      }
+
+  // テーマカラー
+  const theme = isSpecReview
+    ? {
+        accent: "bg-[#2d3a5a]",
+        accentText: "text-white",
+        accentHover: "hover:bg-[#1a2540]",
+        label: "text-[#5b7bbf]",
+        nextBtn: "bg-[#2d3a5a] hover:bg-[#1a2540] text-white",
+        badge: "bg-[#e8edf8] text-[#2d3a5a]",
+        border: "border-[#c8d0e8]",
+        progressFill: "bg-[#2d3a5a]",
+      }
+    : {
+        accent: "bg-[#7D2248]",
+        accentText: "text-white",
+        accentHover: "hover:bg-[#5a1933]",
+        label: "text-[#9b4d6e]",
+        nextBtn: "bg-[#7D2248] hover:bg-[#5a1933] text-white",
+        badge: "bg-[#fce8ef] text-[#7D2248]",
+        border: "border-slate-200",
+        progressFill: "bg-[#7D2248]",
       }
 
   return (
     <div
-      className="max-w-sm rounded-xl border border-slate-300 bg-white/95 p-4 shadow-xl backdrop-blur"
+      className={`w-[360px] rounded-xl border ${theme.border} bg-white/97 shadow-2xl backdrop-blur`}
       style={style}
     >
-      <div className="mb-1 text-xs font-semibold text-slate-500">
-        チュートリアル: {scenario.title}
-      </div>
-      <div className="mb-1 text-sm font-semibold text-slate-900">
-        {currentStepIndex + 1} / {totalSteps} {currentStep.title}
-      </div>
-      <div className="mb-3 text-xs leading-relaxed text-slate-700">
-        {currentStep.description}
-      </div>
+      {/* カラーバー */}
+      <div className={`h-1 w-full rounded-t-xl ${theme.accent}`} />
 
-      <div className="flex items-center justify-between gap-2">
-        <button
-          type="button"
-          onClick={stopTutorial}
-          className="text-xs text-slate-500 underline underline-offset-2"
-        >
-          終了
-        </button>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={prevStep}
-            disabled={currentStepIndex === 0}
-            className="rounded border border-slate-300 px-2 py-1 text-xs disabled:opacity-40"
-          >
-            戻る
-          </button>
-          <button
-            type="button"
-            onClick={nextStep}
-            className="rounded bg-[#7D2248] px-3 py-1 text-xs font-semibold text-white"
-          >
-            {currentStepIndex === totalSteps - 1 ? "完了" : "次へ"}
-          </button>
+      <div className="p-4">
+        {/* ラベル行 */}
+        <div className="mb-2 flex items-center justify-between">
+          <span className={`text-[11px] font-semibold ${theme.label}`}>
+            {isSpecReview ? "仕様検討" : "変更点ガイド"}：{scenario.title}
+          </span>
+          <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${theme.badge}`}>
+            {currentStepIndex + 1} / {totalSteps}
+          </span>
+        </div>
+
+        {/* プログレスバー */}
+        <div className="mb-3 h-1 w-full overflow-hidden rounded-full bg-slate-100">
+          <div
+            className={`h-full rounded-full transition-all duration-300 ${theme.progressFill}`}
+            style={{ width: `${((currentStepIndex + 1) / totalSteps) * 100}%` }}
+          />
+        </div>
+
+        {/* ステップタイトル */}
+        <div className="mb-1.5 text-[14px] font-bold text-slate-900">
+          {currentStep.title}
+        </div>
+
+        {/* 説明（改行対応） */}
+        <div className="mb-3 whitespace-pre-line text-[12px] leading-relaxed text-slate-700">
+          {currentStep.description}
+        </div>
+
+        {/* ナビゲーション */}
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            {isSpecReview && (
+              <button
+                type="button"
+                onClick={() => {
+                  stopTutorial()
+                  openSpecReviewMenu()
+                }}
+                className="text-[11px] text-slate-400 underline underline-offset-2 hover:text-slate-600"
+              >
+                メニューに戻る
+              </button>
+            )}
+            {!isSpecReview && (
+              <button
+                type="button"
+                onClick={stopTutorial}
+                className="text-[11px] text-slate-400 underline underline-offset-2 hover:text-slate-600"
+              >
+                終了
+              </button>
+            )}
+          </div>
+          {/* specReview は最終ステップのみ「完了」ボタンを表示。通常ガイドは前へ/次へを表示 */}
+          {(!isSpecReview || isLast) && (
+            <div className="flex items-center gap-2">
+              {!isSpecReview && (
+                <button
+                  type="button"
+                  onClick={prevStep}
+                  disabled={isFirst}
+                  className="rounded border border-slate-200 px-3 py-1.5 text-[11px] disabled:opacity-30 hover:bg-slate-50"
+                >
+                  ← 前へ
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={isLast ? stopTutorial : nextStep}
+                className={`rounded px-3 py-1.5 text-[11px] font-semibold transition ${theme.nextBtn}`}
+              >
+                {isLast ? "完了" : "次へ →"}
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -43,7 +43,10 @@ const ACTIVITY_STATEMENT_PDF = "/pdf/activity-statement.pdf"
 
 export default function VoucherEntryPage() {
   const router = useRouter()
-  const { openTutorialMenu, stopTutorial, startTutorial } = useTutorial()
+  const { openTutorialMenu, stopTutorial, startTutorial, currentStep, nextStep, scenario } = useTutorial()
+
+  // 仕様検討ガイドの現在ステップ
+  const specStep = scenario?.mode === "specReview" ? currentStep?.id : undefined
 
   // ===== マスタ系（useMemo） =====
   // 収支→PL 紐付け、PL派生ツリーの親科目名マップ
@@ -138,6 +141,11 @@ export default function VoucherEntryPage() {
   const [decisionType, setDecisionType] = useState("なし")
   const [category, setCategory] = useState("通常伝票")
   const [fundingType, setFundingType] = useState<"一般" | "指定">("一般")
+  // 振替仕訳対応：借方・貸方それぞれの財源区分
+  const [debitFundingType, setDebitFundingType] = useState<"一般" | "指定">("一般")
+  const [creditFundingType, setCreditFundingType] = useState<"一般" | "指定">("一般")
+  // 仕様検討ステップ②：借方クリック済みフラグ（両バッジハイライト用）
+  const [specStep2Confirmed, setSpecStep2Confirmed] = useState(false)
 
   // ===== 会計選択（親・子・孫） =====
   const [accountModalOpen, setAccountModalOpen] = useState(false)
@@ -422,6 +430,52 @@ if (
 }
 }, [startTutorial])
 
+// ===== 仕様検討ガイド：ステップ別セットアップ =====
+
+// 仕様検討ステップ変化時に step2 フラグをリセット
+useEffect(() => {
+  setSpecStep2Confirmed(false)
+}, [specStep]) // eslint-disable-line react-hooks/exhaustive-deps
+
+// ステップ①に入ったとき：ヘッダーを自動セットして detail フェーズへ（参ボタンを有効化）
+useEffect(() => {
+  if (specStep !== "step-account-search-tab") return
+  setEra("令和"); setYear("8"); setMonth("3"); setDay("31"); setVoucherNo("1")
+  setParentCodeRaw("1"); setChildCodeRaw("1")
+  setPhase("detail"); setLastEditablePhase("detail")
+}, [specStep]) // eslint-disable-line react-hooks/exhaustive-deps
+
+// ステップ②に入ったとき：振替仕訳の例データを自動セット
+useEffect(() => {
+  if (specStep !== "step-voucher-transfer-entry") return
+  setEra("令和"); setYear("8"); setMonth("3"); setDay("31"); setVoucherNo("1")
+  setParentCodeRaw("1"); setChildCodeRaw("1")
+  setDebitCode("959000")
+  setDebitParentName("費用")
+  setDebitChildName("指定純資産から一般純資産への振替額")
+  setDebitAmount("1200000")
+  setCreditCode("959000")
+  setCreditParentName("費用")
+  setCreditChildName("指定純資産から一般純資産への振替額")
+  setCreditAmount("1200000")
+  setDebitFundingType("一般"); setCreditFundingType("一般") // リセット
+  setPhase("detail"); setLastEditablePhase("detail")
+}, [specStep]) // eslint-disable-line react-hooks/exhaustive-deps
+
+// ステップ②：transferPreview フェーズに入ったら自動で確定へ進む
+useEffect(() => {
+  if (specStep === "step-voucher-transfer-entry" && phase === "transferPreview") {
+    onEnterAtTransferPreview()
+  }
+}, [phase, specStep]) // eslint-disable-line react-hooks/exhaustive-deps
+
+// ステップ②完了：確定フェーズに入ったらステップ③へ自動遷移
+useEffect(() => {
+  if (specStep === "step-voucher-transfer-entry" && phase === "confirmed") {
+    nextStep()
+  }
+}, [phase, specStep, nextStep])
+
 function mapIncomeExpenseToPLLocal(
   code: string,
   side: "debit" | "credit"
@@ -663,6 +717,12 @@ function onEnterAtDetail() {
 
   // プレビューで Enter
   function onEnterAtTransferPreview() {
+    // 振替仕訳（同一科目・一般↔指定）は assignDesignated をスキップして確定
+    if (isTransferEntry) {
+      setDetailMessage("")
+      setPhase("confirmed")
+      return
+    }
     if (fundingType === "指定") {
       setDetailMessage("")
       setPhase("assignDesignated")
@@ -692,16 +752,25 @@ const previewLocked =
   phase === "assignDesignated" ||
   phase === "confirmed"
 
+// 振替仕訳判定：同一科目コードで一般↔指定の組み合わせ
+const isTransferEntry =
+  debitCode !== "" &&
+  debitCode === creditCode &&
+  ((debitFundingType === "一般" && creditFundingType === "指定") ||
+    (debitFundingType === "指定" && creditFundingType === "一般"))
+
 // バッジ表示
 const isFundingTarget = (code?: string) =>
   isFundingTargetCode(code || "")
 
 const showDebitBadge =
+  specStep === "step-voucher-transfer-entry" ||
   (phase === "detail" && isFundingTarget(debitCode)) ||
   (["transferPreview", "assignDesignated", "confirmed"].includes(phase) &&
     !!previewDebit?.isPL)
 
 const showCreditBadge =
+  specStep === "step-voucher-transfer-entry" ||
   (phase === "detail" && isFundingTarget(creditCode)) ||
   (["transferPreview", "assignDesignated", "confirmed"].includes(phase) &&
     !!previewCredit?.isPL)
@@ -1807,6 +1876,7 @@ if (isOtherSecuritiesEnterGuideActive) {
 
       {/* ===== 明細エリア ===== */}
       <div
+        data-specreview="voucher-detail"
         className={["mt-3 flex flex-col rounded-[4px] border border-[#7a9bc4] bg-white text-[12px]", phase === "header" ? "opacity-60 pointer-events-none" : ""].join(" ")}
         onKeyDown={handleDetailKeyDown}
       >
@@ -1840,31 +1910,42 @@ if (isOtherSecuritiesEnterGuideActive) {
 {showDebitBadge && (
   <div className="absolute right-2 top-2">
     <GuidedFocus
-      // 収益・費用シナリオのときだけバブルを出す
-      active={isFundingBadgeGuideActive && isFundingTutorialMode}
-      message={"設定した財源はここに表示されます。"}
-      placement="top"
-      nextLabel="次へ"
-      onNext={() => {
-        //このステップのガイドは終了
-        setIsFundingBadgeGuideActive(false)
-        // ★ 次は Enter キーで一次仕訳を確定するガイドへ
-        setFundingEnterGuideStep("primary")
-      }}
+      // 収益・費用シナリオ or 仕様検討ステップ②確認後
+      active={
+        (isFundingBadgeGuideActive && isFundingTutorialMode) ||
+        (specStep === "step-voucher-transfer-entry" && specStep2Confirmed)
+      }
+      message={
+        specStep === "step-voucher-transfer-entry" && specStep2Confirmed
+          ? "借方：指定　/　貸方：一般\n同じ科目で借方・貸方でそれぞれ\n一般・指定を選びます"
+          : "設定した財源はここに表示されます。"
+      }
+      placement="bottom"
+      showClickHint={false}
+      nextLabel={specStep === "step-voucher-transfer-entry" && specStep2Confirmed ? "確認できました →" : "次へ"}
+      onNext={
+        specStep === "step-voucher-transfer-entry" && specStep2Confirmed
+          ? () => nextStep()
+          : () => {
+              setIsFundingBadgeGuideActive(false)
+              setFundingEnterGuideStep("primary")
+            }
+      }
     >
       <span
         ref={badgeRef}
-        className="
-          inline-flex items-center justify-center
-          rounded-full border border-[#7a9bc4] bg-white
-          px-2 py-[1px]
-          text-[10px] leading-none
-          whitespace-nowrap
-        "
+        className={[
+          "inline-flex items-center justify-center",
+          "rounded-full border px-2 py-[1px]",
+          "text-[10px] leading-none whitespace-nowrap",
+          specStep === "step-voucher-transfer-entry" && specStep2Confirmed
+            ? "border-[#2d3a5a] bg-[#e8edf8] font-bold text-[#2d3a5a]"
+            : "border-[#7a9bc4] bg-white",
+        ].join(" ")}
         aria-label="funding-type-badge"
         tabIndex={-1}
       >
-        {fundingType}
+        {debitFundingType}
       </span>
     </GuidedFocus>
   </div>
@@ -1885,18 +1966,20 @@ if (isOtherSecuritiesEnterGuideActive) {
       <div className="flex-shrink-0">
         <GuidedFocus
           active={
-            (isFundingTutorialGuiding ||
-              isOtherSecuritiesTutorialGuiding) &&
-            !detailDisabled
+            (specStep === "step-account-search-tab" && !debitAccountModalOpen) ||
+            ((isFundingTutorialGuiding || isOtherSecuritiesTutorialGuiding) && !detailDisabled)
           }
           message={
-            isOtherSecuritiesTutorialGuiding
-              ? "その他有価証券評価差額金は純資産科目ですが、仕訳上では損益科目を使用します。"
-              : "収支入力の場合：収入・支出科目\n損益入力の場合：収益・費用科目\nを選択します。"
+            specStep === "step-account-search-tab"
+              ? "「指定純資産から一般純資産への振替額」科目の表示タブが変わりました。\nクリックして科目検索ダイアログで確認してください。"
+              : isOtherSecuritiesTutorialGuiding
+                ? "その他有価証券評価差額金は純資産科目ですが、仕訳上では損益科目を使用します。"
+                : "収支入力の場合：収入・支出科目\n損益入力の場合：収益・費用科目\nを選択します。"
           }
           placement="right"
         >
           <button
+            data-specreview="debit-account-search-btn"
             className="flex h-[24px] w-[28px] flex-shrink-0 items-center justify-center rounded-[2px] border border-[#7a9bc4] bg-white text-[12px]"
             title="参"
             disabled={detailDisabled}
@@ -2028,8 +2111,16 @@ if (isOtherSecuritiesEnterGuideActive) {
           {/* 貸方 上段 */}
           <div className="px-2 py-2 relative">
             {showCreditBadge && (
-              <span className="absolute right-2 top-2 inline-block rounded-full border border-[#7a9bc4] bg-white px-2 py-[1px] text-[10px] leading-none" aria-label="funding-type-badge">
-                {fundingType}
+              <span
+                className={[
+                  "absolute right-2 top-2 inline-block rounded-full px-2 py-[1px] text-[10px] leading-none",
+                  specStep === "step-voucher-transfer-entry" && specStep2Confirmed
+                    ? "border border-[#2d3a5a] bg-[#e8edf8] font-bold text-[#2d3a5a]"
+                    : "border border-[#7a9bc4] bg-white",
+                ].join(" ")}
+                aria-label="funding-type-badge"
+              >
+                {creditFundingType}
               </span>
             )}
 
@@ -2102,8 +2193,15 @@ if (isOtherSecuritiesEnterGuideActive) {
           {/* 借方 摘要ブロック（クリックでモーダル） */}
           <div className="border-r border-[#7a9bc4]">
 <GuidedFocus
-  active={isFundingRemarkGuiding && !detailDisabled}
-  message={remarkGuideText}
+  active={
+    (specStep === "step-voucher-transfer-entry" && !specStep2Confirmed && !detailDisabled) ||
+    (isFundingRemarkGuiding && !detailDisabled)
+  }
+  message={
+    specStep === "step-voucher-transfer-entry"
+      ? "クリックして借方の財源区分を「指定」に設定します"
+      : remarkGuideText
+  }
   placement="bottom"
 >
   <button
@@ -2112,6 +2210,14 @@ if (isOtherSecuritiesEnterGuideActive) {
     disabled={previewLocked || detailDisabled}
     onClick={() => {
       if (detailDisabled) return
+
+      // 仕様検討ステップ②：摘要を開かず借方=指定・貸方=一般を設定してバッジをハイライト
+      if (specStep === "step-voucher-transfer-entry") {
+        setDebitFundingType("指定")
+        setCreditFundingType("一般")
+        setSpecStep2Confirmed(true)
+        return
+      }
 
       // 摘要モーダルを開く
       setRemarkSide("debit")
@@ -2177,7 +2283,11 @@ if (isOtherSecuritiesEnterGuideActive) {
             <button
               type="button"
               disabled={previewLocked || detailDisabled}
-              onClick={() => { if (!detailDisabled) { setRemarkSide("credit"); setRemarkModalOpen(true) } }}
+              onClick={() => {
+                if (!detailDisabled) {
+                  setRemarkSide("credit"); setRemarkModalOpen(true)
+                }
+              }}
               className={["border border-[#7a9bc4] bg-[#eef5ff] w-full text-left", "text-[12px] leading-[16px] p-0", previewLocked || detailDisabled ? "cursor-not-allowed opacity-60" : "cursor-pointer hover:bg-[#fffde8]"].join(" ")}
             >
               <div className="grid grid-cols-2">
@@ -2266,44 +2376,57 @@ if (isOtherSecuritiesEnterGuideActive) {
   }}
 
   initialCategoryId={
-    isBsFundingScenario
-      ? "bs"
-      : otherSecuritiesAccountGuideActive
-        ? "netAssetsPl"
-        : undefined
+    specStep === "step-account-search-tab"
+      ? "pl"
+      : isBsFundingScenario
+        ? "bs"
+        : otherSecuritiesAccountGuideActive
+          ? "netAssetsPl"
+          : undefined
   }
   initialExpandedCodes={isBsFundingScenario ? CASH_TREE_CODES_FOR_TUTORIAL : undefined}
-  
+
   guideHighlightCodes={
-    otherSecuritiesAccountGuideActive
-      ? ["960100", "740100"]
-      : CASH_HIRIGHT_CODES
+    specStep === "step-account-search-tab"
+      ? ["959000"]
+      : otherSecuritiesAccountGuideActive
+        ? ["960100", "740100"]
+        : CASH_HIRIGHT_CODES
   }
   guideTargetCode={
-    otherSecuritiesAccountGuideActive
-      ? "960100"
-      : !isBsFundingScenario
-        ? undefined
-        : bsGuideStep === "step1"
-          ? "01013215"
-          : bsGuideStep === "step2"
-            ? "010132"
-            : undefined
-  }  
+    specStep === "step-account-search-tab"
+      ? "959000"
+      : otherSecuritiesAccountGuideActive
+        ? "960100"
+        : !isBsFundingScenario
+          ? undefined
+          : bsGuideStep === "step1"
+            ? "01013215"
+            : bsGuideStep === "step2"
+              ? "010132"
+              : undefined
+  }
 
   guideMessage={
-    otherSecuritiesAccountGuideActive
-      ? "「純資産科目」タブで、その他有価証券評価差額金（評価益）または（評価損）を選択します。"
-      : !isBsFundingScenario
-        ? undefined
-        : bsGuideStep === "step1"
-          ? "基本財産・特定資産がなくなったことにより普通預金・定期預金等の科目の階層を1つ下げ、\n基本財産・特定資産用の科目を新設します。"
-          : bsGuideStep === "step2"
-            ? "これにより、現預金出納帳・総勘定元帳を\n中科目レベルで出力できるよう機能追加しました。"
-            : undefined
+    specStep === "step-account-search-tab"
+      ? "「指定純資産から一般純資産への振替額」（コード：959000）が\n「純資産科目」タブから「活動科目」タブへ移動しました。\n\n確認できたら「次へ」を押してください。"
+      : otherSecuritiesAccountGuideActive
+        ? "「純資産科目」タブで、その他有価証券評価差額金（評価益）または（評価損）を選択します。"
+        : !isBsFundingScenario
+          ? undefined
+          : bsGuideStep === "step1"
+            ? "基本財産・特定資産がなくなったことにより普通預金・定期預金等の科目の階層を1つ下げ、\n基本財産・特定資産用の科目を新設します。"
+            : bsGuideStep === "step2"
+              ? "これにより、現預金出納帳・総勘定元帳を\n中科目レベルで出力できるよう機能追加しました。"
+              : undefined
   }
 
 onGuideNext={() => {
+  if (specStep === "step-account-search-tab") {
+    setDebitAccountModalOpen(false)
+    nextStep()
+    return
+  }
   if (otherSecuritiesAccountGuideActive) {
     setOtherSecuritiesAccountGuideActive(false)
     setDebitAccountModalOpen(false)
@@ -2364,7 +2487,7 @@ onGuideNext={() => {
   initialRemark={remarkSide === "debit" ? debitRemark : creditRemark}
   lineLabel={remarkSide === "debit" ? "借方 1行目" : "貸方 1行目"}
   accountKind={resolveAccountKindForSide(remarkSide)}
-  initialFundingType={fundingType}
+  initialFundingType={remarkSide === "debit" ? debitFundingType : creditFundingType}
   autoFocusField="fundingType"
   onSubmit={(p) => {
     if (remarkSide === "debit") {
@@ -2380,6 +2503,13 @@ onGuideNext={() => {
       | "指定"
       | undefined
     if (ft === "一般" || ft === "指定") {
+      // サイドごとに保存（振替仕訳で借方・貸方を別々に設定できる）
+      if (remarkSide === "debit") {
+        setDebitFundingType(ft)
+      } else {
+        setCreditFundingType(ft)
+      }
+      // 後方互換：共有 fundingType も更新（指定純資産セレクタ等で使用）
       setFundingType(ft)
     }
 

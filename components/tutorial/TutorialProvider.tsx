@@ -306,28 +306,26 @@ function TutorialOverlay() {
               </button>
             )}
           </div>
-          {/* specReview は最終ステップのみ「完了」ボタンを表示。通常ガイドは前へ/次へを表示 */}
-          {(!isSpecReview || isLast) && (
-            <div className="flex items-center gap-2">
-              {!isSpecReview && (
-                <button
-                  type="button"
-                  onClick={prevStep}
-                  disabled={isFirst}
-                  className="rounded border border-slate-200 px-3 py-1.5 text-[11px] disabled:opacity-30 hover:bg-slate-50"
-                >
-                  ← 前へ
-                </button>
-              )}
+          {/* 次へ／完了ボタン */}
+          <div className="flex items-center gap-2">
+            {!isSpecReview && (
               <button
                 type="button"
-                onClick={isLast ? stopTutorial : nextStep}
-                className={`rounded px-3 py-1.5 text-[11px] font-semibold transition ${theme.nextBtn}`}
+                onClick={prevStep}
+                disabled={isFirst}
+                className="rounded border border-slate-200 px-3 py-1.5 text-[11px] disabled:opacity-30 hover:bg-slate-50"
               >
-                {isLast ? "完了" : "次へ →"}
+                ← 前へ
               </button>
-            </div>
-          )}
+            )}
+            <button
+              type="button"
+              onClick={isLast ? stopTutorial : nextStep}
+              className={`rounded px-3 py-1.5 text-[11px] font-semibold transition ${theme.nextBtn}`}
+            >
+              {isLast ? "完了" : "次へ →"}
+            </button>
+          </div>
         </div>
       </div>
     </div>

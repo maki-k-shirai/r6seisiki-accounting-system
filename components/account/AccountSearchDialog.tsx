@@ -17,7 +17,6 @@ import {
   type AccountNode,
   getAccountFullName,
 } from "@/components/account/account-data"
-import { GuidedFocus } from "@/components/tutorial/GuidedFocus"
 
 // ==== タブ定義 ====
 const DEFAULT_TAB_ITEMS = [
@@ -673,22 +672,7 @@ const row = (
 
 return (
   <div className="text-[12px] leading-tight text-[#1a1a1a]">
-    {isGuideTarget && guideMessage ? (
-      <GuidedFocus
-        active={true}
-        message={guideMessage}
-        placement="right"
-        variant="wide"
-        fullWidth={false}
-        showClickHint={false}
-        nextLabel="次へ"
-        onNext={onGuideNext}
-      >
-        {row}
-      </GuidedFocus>
-    ) : (
-      row
-    )}
+    {row}
 
     {shouldShowChildren && (
       <div className="ml-4 border-l border-dotted border-[#999] pl-2">

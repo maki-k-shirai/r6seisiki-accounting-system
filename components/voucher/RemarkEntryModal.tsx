@@ -9,7 +9,6 @@ import {
   FundingSearchModal,
   type FundingPickPayload,
 } from "@/components/funding/FundingSearchModal"
-import { GuidedFocus } from "@/components/tutorial/GuidedFocus"
 
 type AccountKind = "PL" | "IncomeExpense" | "BS" | "Other"
 
@@ -53,12 +52,6 @@ export type RemarkEntryModalProps = {
   accountingCode: string
   accountingDisplayCode: string
   accountingName: string
-  // ★ チュートリアル用
-  tutorialFundingGuideActive?: boolean
-  tutorialEnterGuideActive?: boolean
-  onTutorialFundingCompleted?: () => void
-  onTutorialEnterCompleted?: () => void
-
   // ★ フォーカス先（デフォルトは「一般・指定」）
   autoFocusField?: "fundingType" | "remark"
 }
@@ -75,10 +68,6 @@ export function RemarkEntryModal({
   accountingCode,
   accountingDisplayCode,
   accountingName,
-  tutorialFundingGuideActive = false,
-  tutorialEnterGuideActive = false,
-  onTutorialFundingCompleted,
-  onTutorialEnterCompleted,
   autoFocusField = "fundingType",
 }: RemarkEntryModalProps) {
   // --- 関係者・摘要
@@ -120,16 +109,13 @@ export function RemarkEntryModal({
   const showProjectBlocks = accountKind !== "BS"
   const showFundingBlocks = showProjectBlocks
 
-  // チュートリアル時は“一般・指定”を強制表示
-  const forceFundingTypeRow = tutorialFundingGuideActive === true
   const renderFundingTypeRow =
-    forceFundingTypeRow || (showFundingTypeRow && showProjectBlocks)
+    showFundingTypeRow && showProjectBlocks
 
   // === フォーカス対象 ref ===
   const fundingTypeRef = useRef<HTMLDivElement | null>(null)
   const remarkCodeRef = useRef<HTMLInputElement | null>(null)
 
-  // 追加：モーダル内でのガイド起動タイミング制御
   const [focusReady, setFocusReady] = useState(false)
 
   // 開いたときの初期化
@@ -414,13 +400,6 @@ export function RemarkEntryModal({
                 財源区分
               </div>
               <div className="px-2 py-2">
-                <GuidedFocus
-                  active={tutorialFundingGuideActive && focusReady}
-                  message={
-                    "財源を一般・指定から選択します。\n初期値は「一般」が選択されます。\nここでは「指定」を選択してください。"
-                  }
-                  placement="bottom"
-                >
                   <div
                     ref={fundingTypeRef}
                     tabIndex={-1}
@@ -432,16 +411,7 @@ export function RemarkEntryModal({
                         name="fundingType"
                         value="一般"
                         checked={fundingType === "一般"}
-                        onChange={(e) => {
-                          const v = e.target.value as "一般" | "指定"
-                          setFundingType(v)
-                          if (
-                            tutorialFundingGuideActive &&
-                            onTutorialFundingCompleted
-                          ) {
-                            onTutorialFundingCompleted()
-                          }
-                        }}
+                        onChange={(e) => setFundingType(e.target.value as "一般" | "指定")}
                       />
                       <span>一般</span>
                     </label>
@@ -451,21 +421,11 @@ export function RemarkEntryModal({
                         name="fundingType"
                         value="指定"
                         checked={fundingType === "指定"}
-                        onChange={(e) => {
-                          const v = e.target.value as "一般" | "指定"
-                          setFundingType(v)
-                          if (
-                            tutorialFundingGuideActive &&
-                            onTutorialFundingCompleted
-                          ) {
-                            onTutorialFundingCompleted()
-                          }
-                        }}
+                        onChange={(e) => setFundingType(e.target.value as "一般" | "指定")}
                       />
                       <span>指定</span>
                     </label>
                   </div>
-                </GuidedFocus>
               </div>
             </div>
           )}
@@ -526,63 +486,51 @@ export function RemarkEntryModal({
         {/* フッター */}
         <div className="flex justify-end gap-2 bg-[#eef2fa] px-3 py-2">
           <div className="inline-flex">
-            <GuidedFocus
-              active={tutorialEnterGuideActive}
-              message={"Enterで確定します。"}
-              placement="top"
+            <Button
+              type="button"
+              className="h-[28px] rounded-[2px] border border-[#7a9bc4] bg-white px-3 text-[13px] leading-tight text-[#1a1a1a] shadow-[inset_0_0_0_1px_#fff]"
+              onClick={() => {
+                onSubmit({
+                  remarkCode: memoCode,
+                  remarkMain: memoText,
+                  remarkSub: memoText2,
+                  party: {
+                    name: partyName,
+                    regNo: partyRegNo,
+                  },
+                  project: showProjectBlocks
+                    ? {
+                        code1: projectCode1,
+                        code2: projectCode2,
+                        code3: projectCode3,
+                        code4: projectCode4,
+                      }
+                    : undefined,
+                  funding: showFundingBlocks
+                    ? {
+                        code1: fundingCode1,
+                        code2: fundingCode2,
+                        code3: fundingCode3,
+                        code4: fundingCode4,
+                      }
+                    : undefined,
+                  fundingOnHold: showFundingBlocks
+                    ? fundingOnHold
+                    : undefined,
+                  fundingType:
+                    renderFundingTypeRow ? fundingType : undefined,
+                  tax: showTaxBlocks
+                    ? {
+                        category: taxCategory,
+                        display: taxDisplay,
+                      }
+                    : { category: "", display: "" },
+                })
+                onClose()
+              }}
             >
-              <Button
-                type="button"
-                className="h-[28px] rounded-[2px] border border-[#7a9bc4] bg-white px-3 text-[13px] leading-tight text-[#1a1a1a] shadow-[inset_0_0_0_1px_#fff]"
-                onClick={() => {
-                  onSubmit({
-                    remarkCode: memoCode,
-                    remarkMain: memoText,
-                    remarkSub: memoText2,
-                    party: {
-                      name: partyName,
-                      regNo: partyRegNo,
-                    },
-                    project: showProjectBlocks
-                      ? {
-                          code1: projectCode1,
-                          code2: projectCode2,
-                          code3: projectCode3,
-                          code4: projectCode4,
-                        }
-                      : undefined,
-                    funding: showFundingBlocks
-                      ? {
-                          code1: fundingCode1,
-                          code2: fundingCode2,
-                          code3: fundingCode3,
-                          code4: fundingCode4,
-                        }
-                      : undefined,
-                    fundingOnHold: showFundingBlocks
-                      ? fundingOnHold
-                      : undefined,
-                    fundingType:
-                      renderFundingTypeRow ? fundingType : undefined,
-                    tax: showTaxBlocks
-                      ? {
-                          category: taxCategory,
-                          display: taxDisplay,
-                        }
-                      : { category: "", display: "" },
-                  })
-
-                  // チュートリアル Enter ガイド終了通知
-                  if (tutorialEnterGuideActive && onTutorialEnterCompleted) {
-                    onTutorialEnterCompleted()
-                  }
-
-                  onClose()
-                }}
-              >
-                ↵ Enter
-              </Button>
-            </GuidedFocus>
+              ↵ Enter
+            </Button>
           </div>
 
           <Button

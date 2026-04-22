@@ -11,16 +11,11 @@ import {
   SquareIcon,
   XIcon,
 } from "lucide-react"
-import { HeaderTutorialLauncher } from "@/components/tutorial/HeaderTutorialLauncher"
-import { SpecReviewLauncher } from "@/components/tutorial/SpecReviewLauncher"
-
 type AppHeaderProps = {
   breadcrumb: string
   versionText: string
   extraCode?: string
   showActionBar?: boolean
-  /** チュートリアルランチャーを表示するかどうか（会計基準チュートリアル専用） */
-  showTutorialLauncher?: boolean
 }
 
 export function AppHeader({
@@ -28,7 +23,6 @@ export function AppHeader({
   versionText,
   extraCode,
   showActionBar,
-  showTutorialLauncher = true, // デフォルトは表示しておく
 }: AppHeaderProps) {
   const [selectedSubSubmenu, setSelectedSubSubmenu] = useState(1)
 
@@ -77,10 +71,6 @@ export function AppHeader({
           <span>ヘルプ(H)</span>
         </button>
 
-        {/* 仕様検討ランチャー */}
-        <SpecReviewLauncher />
-        {/* チュートリアルランチャー（必要なときだけ表示） */}
-        {showTutorialLauncher && <HeaderTutorialLauncher />}
       </div>
 
       {/* Blue Header Bar */}

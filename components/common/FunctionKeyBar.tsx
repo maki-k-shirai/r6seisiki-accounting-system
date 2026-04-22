@@ -2,28 +2,31 @@
 "use client"
 
 import React from "react"
-import { GuidedFocus } from "@/components/tutorial/GuidedFocus"
 
 type KeyButton = {
   keyName: string
   label: string
   kind?: "enter" | "active" | "inactive"
-  action?: "enter" | "back" | "exit" // クリック時に呼びたい動き
+  action?: "enter" | "back" | "exit" | "f7" | "f9" // クリック時に呼びたい動き
 }
 
 export function FunctionKeyBar({
   onEnter,
   onBack,
   onExit,
-  enterTutorialActive,
-  enterTutorialMessage,
+  onF7,
+  onF7Label,
+  onF9,
+  onF9Label,
   onRegisterEnterRef,
 }: {
   onEnter?: () => void
   onBack?: () => void
   onExit?: () => void
-  enterTutorialActive?: boolean
-  enterTutorialMessage?: string
+  onF7?: () => void
+  onF7Label?: string
+  onF9?: () => void
+  onF9Label?: string
   onRegisterEnterRef?: (el: HTMLButtonElement | null) => void
 }) {
   const keys: KeyButton[] = [
@@ -34,9 +37,9 @@ export function FunctionKeyBar({
     { keyName: "F4", label: "終了", kind: "active", action: "exit" },
     { keyName: "F5", label: "ー ー", kind: "inactive" },
     { keyName: "F6", label: "戻る", kind: "active", action: "back" },
-    { keyName: "F7", label: "ー ー", kind: "inactive" },
+    { keyName: "F7", label: onF7 ? (onF7Label ?? "PDF") : "ー ー", kind: onF7 ? "active" : "inactive", action: onF7 ? "f7" : undefined },
     { keyName: "F8", label: "ー ー", kind: "inactive" },
-    { keyName: "F9", label: "ー ー", kind: "inactive" },
+    { keyName: "F9", label: onF9 ? (onF9Label ?? "Excel") : "ー ー", kind: onF9 ? "active" : "inactive", action: onF9 ? "f9" : undefined },
     { keyName: "F10", label: "ー ー", kind: "inactive" },
     { keyName: "F11", label: "ー ー", kind: "inactive" },
     { keyName: "F12", label: "ー ー", kind: "inactive" },
@@ -52,6 +55,12 @@ export function FunctionKeyBar({
         break
       case "exit":
         onExit?.()
+        break
+      case "f7":
+        onF7?.()
+        break
+      case "f9":
+        onF9?.()
         break
       default:
         break
@@ -116,21 +125,6 @@ export function FunctionKeyBar({
             )}
           </button>
         )
-
-        // ★ Enter かつ enterTutorialActive のときだけ GuidedFocus を噛ませる
-        if (isEnter && enterTutorialActive) {
-          return (
-            <GuidedFocus
-              key={idx}
-              active={enterTutorialActive}
-              message={enterTutorialMessage ?? ""}
-              placement="right"
-              fullWidth={false}
-            >
-              {btn}
-            </GuidedFocus>
-          )
-        }
 
         return (
           <React.Fragment key={idx}>

@@ -4,7 +4,6 @@
 import * as React from "react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { GuidedFocus } from "@/components/tutorial/GuidedFocus"
 import { AccountingSelectModal } from "@/components/account/AccountingSelectModal"
 import {
   AccountSearchDialog,
@@ -26,10 +25,6 @@ export type AccountsTabProps = {
   onAddRow: () => void
   onDeleteRow: () => void
   onChangeRow: (rowId: number, updater: (prev: AccountRow) => AccountRow) => void
-  guideAccountingRefActive?: boolean
-  guideSubjectRefActive?: boolean
-  onGuideAccountingRefClick?: () => void
-  onGuideSubjectRefClick?: () => void
 }
 
 export function AccountsTab({
@@ -39,10 +34,6 @@ export function AccountsTab({
   onAddRow,
   onDeleteRow,
   onChangeRow,
-  guideAccountingRefActive = false,
-  guideSubjectRefActive = false,
-  onGuideAccountingRefClick,
-  onGuideSubjectRefClick,
 }: AccountsTabProps) {
   const [accountingModalOpen, setAccountingModalOpen] = React.useState(false)
   const [subjectModalOpen, setSubjectModalOpen] = React.useState(false)
@@ -163,32 +154,16 @@ export function AccountsTab({
 
                 {/* 会計参照 */}
                 <div className="flex min-h-[36px] items-center justify-center border-r border-[#cccccc]">
-                  <GuidedFocus
-                    active={guideAccountingRefActive && index === 0}
-                    message="会計を選択します。"
-                    placement="bottom"
-                    fullWidth={false}
+                  <button
+                    type="button"
+                    className="h-[24px] rounded-[3px] border border-[#7a9bc4] bg-[#f5f8ff] px-3 text-[12px] text-[#0044cc] hover:bg-[#e3edff]"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      openAccountingModal(row.id)
+                    }}
                   >
-                    <button
-                      type="button"
-                      className="h-[24px] rounded-[3px] border border-[#7a9bc4] bg-[#f5f8ff] px-3 text-[12px] text-[#0044cc] hover:bg-[#e3edff]"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        if (guideAccountingRefActive && index === 0) {
-                          onChangeRow(row.id, (prev) => ({
-                            ...prev,
-                            accountingCode: "0001",
-                            accountingName: "公益目的事業会計",
-                          }))
-                          onGuideAccountingRefClick?.()
-                          return
-                        }
-                        openAccountingModal(row.id)
-                      }}
-                    >
-                      参
-                    </button>
-                  </GuidedFocus>
+                    参
+                  </button>
                 </div>
 
                 {/* 科目（コード・名称） */}
@@ -207,32 +182,16 @@ export function AccountsTab({
 
                 {/* 科目参照 */}
                 <div className="flex min-h-[36px] items-center justify-center">
-                  <GuidedFocus
-                    active={guideSubjectRefActive && index === 0}
-                    message="科目を選択します。"
-                    placement="left"
-                    fullWidth={false}
+                  <button
+                    type="button"
+                    className="h-[24px] rounded-[3px] border border-[#7a9bc4] bg-[#f5f8ff] px-3 text-[12px] text-[#0044cc] hover:bg-[#e3edff]"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      openSubjectModal(row.id)
+                    }}
                   >
-                    <button
-                      type="button"
-                      className="h-[24px] rounded-[3px] border border-[#7a9bc4] bg-[#f5f8ff] px-3 text-[12px] text-[#0044cc] hover:bg-[#e3edff]"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        if (guideSubjectRefActive && index === 0) {
-                          onChangeRow(row.id, (prev) => ({
-                            ...prev,
-                            subjectCode: "022101",
-                            subjectName: "土地",
-                          }))
-                          onGuideSubjectRefClick?.()
-                          return
-                        }
-                        openSubjectModal(row.id)
-                      }}
-                    >
-                      参
-                    </button>
-                  </GuidedFocus>
+                    参
+                  </button>
                 </div>
               </div>
             )

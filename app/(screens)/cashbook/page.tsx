@@ -1,9 +1,7 @@
 // app/(screens)/cashbook/page.tsx
 "use client"
 
-import { Suspense, useEffect, useMemo, useRef, useState } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
-import { GuidedFocus } from "@/components/tutorial/GuidedFocus"
+import { Suspense, useState } from "react"
 import { FunctionKeyBar } from "@/components/common/FunctionKeyBar"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -12,8 +10,6 @@ import {
   AccountSearchDialog,
   type PickedAccount,
 } from "@/components/account/AccountSearchDialog"
-import { useTutorial } from "@/components/tutorial/TutorialProvider"
-
 // 会計マスタを利用
 import {
   DUMMY_ACCOUNTS,
@@ -71,24 +67,6 @@ const buildInitialCheckedMap = () => {
     })
   }
 
-  // チュートリアル用
-const router = useRouter()
-const searchParams = useSearchParams()
-const tutorial = searchParams.get("tutorial")
-const [guideDone, setGuideDone] = useState(false)
-const levelSelectRef = useRef<HTMLSelectElement | null>(null)
-const guideActive = useMemo(
-  () => tutorial === "cashbookLevel" && !guideDone,
-  [tutorial, guideDone],
-)
-const { openTutorialMenu, stopTutorial } = useTutorial()
-
-
-useEffect(() => {
-  if (!guideActive) return
-  levelSelectRef.current?.scrollIntoView({ block: "center" })
-  levelSelectRef.current?.focus()
-}, [guideActive])
 
   return (
     <div className="flex h-screen flex-col bg-sky-50">
@@ -268,36 +246,14 @@ useEffect(() => {
 <div className="mt-3 space-y-1">
   <p className="text-sm font-bold">■最小表示範囲</p>
   <div className="mt-1">
-    <GuidedFocus
-      active={guideActive}
-      placement="right"
-      variant="wide"
-      fullWidth={false}
-      message="同じ預金口座を使っていても、口座単位で残高の増減を確認したい場合と基本財産・特定資産ごとの内訳を確認したい場合で、出力レベルを切り替えて確認できます。"
-      primaryLabel= "変更点ガイドへ"
-      onPrimary={() => {
-        setGuideDone(true)
-        router.replace("/cashbook")
-        setTimeout(() => openTutorialMenu(), 0)
-      }}
-      secondaryLabel= "終了"
-      onSecondary={() => {
-        setGuideDone(true)
-        router.replace("/cashbook") // ✅ クエリを消してガイドも消える
-      }}
-    >
-      <select
-        ref={levelSelectRef}
-        className="h-8 w-40 border bg-white text-sm"
-      >
-        <option>中科目</option>
-        <option>小科目</option>
-        <option>細目1</option>
-        <option>細目2</option>
-        <option>細目3</option>
-        <option>細目4</option>
-      </select>
-    </GuidedFocus>
+    <select className="h-8 w-40 border bg-white text-sm">
+      <option>中科目</option>
+      <option>小科目</option>
+      <option>細目1</option>
+      <option>細目2</option>
+      <option>細目3</option>
+      <option>細目4</option>
+    </select>
   </div>
 </div>
 

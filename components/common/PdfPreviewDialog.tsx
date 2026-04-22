@@ -2,21 +2,12 @@
 "use client"
 
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
-import { GuidedFocus } from "@/components/tutorial/GuidedFocus"
 
 type PdfPreviewDialogProps = {
   open: boolean
   onClose: () => void
   src: string
   title?: string
-
-  // チュートリアル用
-  tutorialActive?: boolean
-  tutorialMessage?: string
-  tutorialPrimaryLabel?: string
-  tutorialOnPrimary?: () => void
-  tutorialSecondaryLabel?: string
-  tutorialOnSecondary?: () => void
 }
 
 function isImageSrc(src: string) {
@@ -29,12 +20,6 @@ export function PdfPreviewDialog({
   onClose,
   src,
   title = "PDFプレビュー",
-  tutorialActive = false,
-  tutorialMessage,
-  tutorialPrimaryLabel,
-  tutorialOnPrimary,
-  tutorialSecondaryLabel,
-  tutorialOnSecondary,
 }: PdfPreviewDialogProps) {
   const image = isImageSrc(src)
 
@@ -54,31 +39,6 @@ export function PdfPreviewDialog({
           <span className="font-medium text-[#1a1a1a]">{title}</span>
 
           <div className="flex items-center gap-2">
-            {/* 右上チュートリアルアイコン＋吹き出し */}
-            {tutorialActive && tutorialMessage && (
-              <GuidedFocus
-                active={tutorialActive}
-                message={tutorialMessage}
-                placement="left"
-                fullWidth={false}
-                primaryLabel={tutorialPrimaryLabel ?? "変更点ガイドへ"}
-                onPrimary={tutorialOnPrimary ?? (() => onClose())}
-                secondaryLabel={tutorialSecondaryLabel ?? "終了"}
-                onSecondary={tutorialOnSecondary ?? (() => onClose())}
-              >
-                <button
-                  type="button"
-                  className="
-                    inline-flex h-[20px] w-[20px] items-center justify-center
-                    rounded-full border border-[#7a9bc4] bg-white text-[11px]
-                    text-[#7D2248] shadow-sm
-                  "
-                  aria-label="帳票チュートリアルガイド"
-                >
-                  i
-                </button>
-              </GuidedFocus>
-            )}
             <button
               type="button"
               onClick={onClose}

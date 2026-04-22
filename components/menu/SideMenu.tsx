@@ -2,98 +2,33 @@
 "use client"
 
 import { useState, useMemo, useEffect } from "react"
-import { useRouter, usePathname, useSearchParams } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation"
 import { cn } from "@/lib/cn"
 import { Search } from "lucide-react"
 import type { SideMenuNode } from "./types"
 import { rootMenu } from "./rootmenu"
-import { GuidedFocus } from "@/components/tutorial/GuidedFocus"
 
 export function SideMenu() {
   const router = useRouter()
   const pathname = usePathname()
-  const searchParams = useSearchParams()
   const [stack, setStack] = useState<{ title?: string; nodes: SideMenuNode[] }[]>([
     { title: "トップメニュー", nodes: rootMenu },
   ])
   const [activeTab, setActiveTab] = useState<"all" | "history">("all")
   const [query, setQuery] = useState("")
-  const menuGuide = searchParams.get("menuGuide")
-  const guideStage =
-    menuGuide === "restricted-asset-register-menu"
-      ? "restricted-asset-register-menu"
-      : menuGuide === "restricted-assets-sub"
-      ? "restricted-assets-sub"
-      : menuGuide === "master-root" || menuGuide === "basic-setting"
-      ? "master-root"
-      : null
-  const masterMaintenanceNode = useMemo(
-    () => rootMenu.find((node) => node.id === "7"),
-    []
-  )
-  const restrictedAssetsMaintenanceNode = useMemo(
-    () => masterMaintenanceNode?.children?.find((node) => node.id === "7-6"),
-    [masterMaintenanceNode]
-  )
 
   const current = stack[stack.length - 1]
   const canGoBack = stack.length > 1
-  const showMasterRootGuide = guideStage === "master-root" && stack.length === 1
-  const showRestrictedAssetsGuide =
-    guideStage === "restricted-assets-sub" &&
-    stack.length > 1 &&
-    current.title === masterMaintenanceNode?.label
-  const showRegisterMenuGuide =
-    guideStage === "restricted-asset-register-menu" &&
-    stack.length > 2 &&
-    current.title === restrictedAssetsMaintenanceNode?.label
-  const showMenuGuide =
-    showMasterRootGuide || showRestrictedAssetsGuide || showRegisterMenuGuide
 
   const handleGoTop = () => setStack([{ title: "トップメニュー", nodes: rootMenu }])
   const handleBack = () => {
     if (canGoBack) setStack((prev) => prev.slice(0, prev.length - 1))
   }
 
-  const updateMenuGuide = (
-    nextGuide:
-      | "master-root"
-      | "restricted-assets-sub"
-      | "restricted-asset-register-menu"
-  ) => {
-    const params = new URLSearchParams(searchParams.toString())
-    params.set("menuGuide", nextGuide)
-    router.replace(`${pathname}?${params.toString()}`)
-  }
-
   const handleClickNode = (node: SideMenuNode) => {
-    if (
-      guideStage === "master-root" &&
-      node.id === "7" &&
-      node.children?.length
-    ) {
-      setStack((prev) => [...prev, { title: node.label, nodes: node.children! }])
-      updateMenuGuide("restricted-assets-sub")
-      return
-    }
-
-    if (
-      guideStage === "restricted-assets-sub" &&
-      node.id === "7-6" &&
-      node.children?.length
-    ) {
-      setStack((prev) => [...prev, { title: node.label, nodes: node.children! }])
-      updateMenuGuide("restricted-asset-register-menu")
-      return
-    }
-
     if (node.children?.length) {
       setStack((prev) => [...prev, { title: node.label, nodes: node.children! }])
     } else if (node.href) {
-      if (guideStage === "restricted-asset-register-menu" && node.id === "7-6-1") {
-        router.push("/restricted-asset-register?menuGuide=restricted-asset-type")
-        return
-      }
       router.push(node.href)
     }
   }
@@ -122,7 +57,6 @@ export function SideMenu() {
   }
 
   useEffect(() => {
-    if (guideStage) return
     if (!activeHref) return
     const path = findPathByHref(rootMenu, activeHref)
     if (!path) return
@@ -136,42 +70,11 @@ export function SideMenu() {
       }
     }
     setStack(nextStack)
-  }, [activeHref, guideStage])
-
-  useEffect(() => {
-    if (guideStage === "master-root") {
-      setStack([{ title: "トップメニュー", nodes: rootMenu }])
-      return
-    }
-    if (guideStage === "restricted-assets-sub" && masterMaintenanceNode?.children) {
-      setStack([
-        { title: "トップメニュー", nodes: rootMenu },
-        { title: masterMaintenanceNode.label, nodes: masterMaintenanceNode.children },
-      ])
-      return
-    }
-    if (
-      guideStage === "restricted-asset-register-menu" &&
-      masterMaintenanceNode?.children &&
-      restrictedAssetsMaintenanceNode?.children
-    ) {
-      setStack([
-        { title: "トップメニュー", nodes: rootMenu },
-        { title: masterMaintenanceNode.label, nodes: masterMaintenanceNode.children },
-        {
-          title: restrictedAssetsMaintenanceNode.label,
-          nodes: restrictedAssetsMaintenanceNode.children,
-        },
-      ])
-    }
-  }, [guideStage, masterMaintenanceNode, restrictedAssetsMaintenanceNode])
+  }, [activeHref])
 
   return (
     <aside
-      className={cn(
-        "w-64 min-h-screen bg-[#e8eef7] border-r border-[#c0c0c0] flex flex-col text-[13px] leading-tight",
-        showMenuGuide && "relative z-[4000]"
-      )}
+      className="w-64 min-h-screen bg-[#e8eef7] border-r border-[#c0c0c0] flex flex-col text-[13px] leading-tight"
     >
       {/* === 検索・タブ行 === */}
       <div className="p-3 bg-white border-b border-[#c0c0c0]">
@@ -241,12 +144,7 @@ export function SideMenu() {
 
       {/* === メニューカード群 === */}
       {/* flex-1 + overflow-y-auto で、中身だけスクロール */}
-      <div
-        className={cn(
-          "flex-1 p-2 bg-[#e8eef7]",
-          showMenuGuide ? "overflow-visible" : "overflow-y-auto"
-        )}
-      >
+      <div className="flex-1 p-2 bg-[#e8eef7] overflow-y-auto">
         {current.nodes.map((node) => {
           const button = (
             <button
@@ -326,45 +224,6 @@ export function SideMenu() {
               )}
             </button>
           )
-
-          if (showMasterRootGuide && node.id === "7") {
-            return (
-              <GuidedFocus
-                key={node.id}
-                active
-                message="使途拘束資産を管理するための保守メニューを追加しました"
-                placement="right"
-              >
-                {button}
-              </GuidedFocus>
-            )
-          }
-
-          if (showRestrictedAssetsGuide && node.id === "7-6") {
-            return (
-              <GuidedFocus
-                key={node.id}
-                active
-                message="ここから、使途拘束資産の設定を行います"
-                placement="right"
-              >
-                {button}
-              </GuidedFocus>
-            )
-          }
-
-          if (showRegisterMenuGuide && node.id === "7-6-1") {
-            return (
-              <GuidedFocus
-                key={node.id}
-                active
-                message="使途拘束資産登録画面を開きます"
-                placement="right"
-              >
-                {button}
-              </GuidedFocus>
-            )
-          }
 
           return button
         })}

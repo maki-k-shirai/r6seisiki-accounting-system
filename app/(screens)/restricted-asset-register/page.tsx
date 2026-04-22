@@ -3,13 +3,11 @@
 
 import * as React from "react"
 import { Suspense } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { FunctionKeyBar } from "@/components/common/FunctionKeyBar"
-import { GuidedFocus } from "@/components/tutorial/GuidedFocus"
 import { PdfPreviewDialog } from "@/components/common/PdfPreviewDialog"
-import { useTutorial } from "@/components/tutorial/TutorialProvider"
 import {
   AccountsTab,
   type AccountRow,
@@ -123,22 +121,6 @@ const RequiredMark = ({ required = false }: { required?: boolean }) => (
 
 function RestrictedAssetRegisterPageContent() {
   const router = useRouter()
-  const { openTutorialMenu, stopTutorial } = useTutorial()
-  const searchParams = useSearchParams()
-  const initialGuideActive =
-    searchParams.get("menuGuide") === "restricted-asset-type"
-  const [guideStep, setGuideStep] = React.useState<
-    "assetType" | "assetCode" | "basicTab" | "accountsTab" | "accountingRef" | "subjectRef" | "finalEnter" | null
-  >(
-    initialGuideActive ? "assetType" : null,
-  )
-  const showAssetTypeGuide = guideStep === "assetType"
-  const showAssetCodeGuide = guideStep === "assetCode"
-  const showBasicTabGuide = guideStep === "basicTab"
-  const showAccountsTabGuide = guideStep === "accountsTab"
-  const showAccountingRefGuide = guideStep === "accountingRef"
-  const showSubjectRefGuide = guideStep === "subjectRef"
-  const showFinalEnterGuide = guideStep === "finalEnter"
   const assetCodeInputRef = React.useRef<HTMLInputElement | null>(null)
   const [isPdfPreviewOpen, setIsPdfPreviewOpen] = React.useState(false)
   const [processMode, setProcessMode] = React.useState<ProcessMode>("create")
@@ -247,11 +229,6 @@ const handleChangeAmountRow = (
     }
   }, [isType3, activeTab])
 
-  React.useEffect(() => {
-    if (showAssetCodeGuide) {
-      assetCodeInputRef.current?.focus()
-    }
-  }, [showAssetCodeGuide])
 
   // ===== Enterキー：1〜5号のときに詳細エリアを表示 =====
   React.useEffect(() => {
@@ -270,18 +247,9 @@ const handleChangeAmountRow = (
 
   // ===== Enter / 戻る ロジック（FunctionKeyBar 用） =====
   const handleDecide = () => {
-    if (showFinalEnterGuide) {
-      setGuideStep(null)
-      setIsPdfPreviewOpen(true)
-      return
-    }
-
     if (!showDetailArea) {
       if (assetType !== "6号") {
         setShowDetailArea(true)
-        if (showAssetCodeGuide) {
-          setGuideStep("basicTab")
-        }
       }
       return
     }
@@ -360,24 +328,7 @@ const handleChangeAmountRow = (
   }
 
   const handleAssetTypeChange = (nextValue: AssetType) => {
-    if (showAssetTypeGuide) {
-      setAssetType("1号")
-      setAssetCode1("0001")
-      setGuideStep("assetCode")
-      return
-    }
     setAssetType(nextValue)
-  }
-
-  const applyGuideBasicInfo = () => {
-    setRestrictedAssetName("本部事務所（土地）")
-    setLocation("東京都千代田区〇〇1-2-3")
-    setSizeStructure("土地：300㎡\n建物：鉄筋コンクリート造3階建 延床面積450㎡")
-    setUsageStatus(
-      "公益目的事業（高齢者支援事業・研修事業）の事務局として常時使用\n全フロアを公益事業専用として利用",
-    )
-    setIsEssentialAsset(true)
-    setAcquisitionTiming("before")
   }
 
   return (
@@ -386,7 +337,6 @@ const handleChangeAmountRow = (
       <FunctionKeyBar
         onEnter={handleDecide}
         onBack={handleBack}
-        enterTutorialActive={showAssetCodeGuide || showFinalEnterGuide}
       />
 
       {/* 本文エリア */}
@@ -437,22 +387,9 @@ const handleChangeAmountRow = (
             使途拘束資産区分
           </div>
           <div className="flex items-center bg-[#eaf3ff] px-3 py-1.5">
-            <GuidedFocus
-              active={showAssetTypeGuide}
-              message={
-                "管理したい使途拘束資産（控除対象財産）が該当する号を指定します。\nこのガイドでは1.公益目的保有財産を選択します。"
-              }
-              placement="right"
-              fullWidth={false}
-            >
               <select
                 className="h-[26px] w-[280px] rounded-[2px] border border-[#7a9bc4] bg-white px-1 text-[14px]"
                 value={assetType}
-                onClick={() => {
-                  if (showAssetTypeGuide) {
-                    handleAssetTypeChange("1号")
-                  }
-                }}
                 onChange={(e) => handleAssetTypeChange(e.target.value as AssetType)}
               >
                 <option value="1号">1: 公益目的保有財産</option>
@@ -462,7 +399,6 @@ const handleChangeAmountRow = (
                 <option value="5号">5: 特定費用準備資金</option>
                 <option value="6号">6: 指定寄附資金</option>
               </select>
-            </GuidedFocus>
           </div>
         </div>
 
@@ -472,13 +408,6 @@ const handleChangeAmountRow = (
             使途拘束資産コード
           </div>
           <div className="flex items-center gap-2 bg-[#eaf3ff] px-3 py-1.5">
-            <GuidedFocus
-              active={showAssetCodeGuide}
-              message="コードを設定したら、Enterをクリックします。"
-              placement="right"
-              fullWidth={false}
-              showClickHint={false}
-            >
               <Input
                 ref={assetCodeInputRef}
                 value={assetCode1}
@@ -486,7 +415,6 @@ const handleChangeAmountRow = (
                 data-asset-code="true"
                 className="h-[24px] w-[90px] rounded-[2px] border border-[#7a9bc4] bg-white px-1 text-right text-[14px]"
               />
-            </GuidedFocus>
             {/* 子〜ひ孫は使わないので hidden */}
             <Input value={assetCode2} disabled className="hidden" />
             <Input value={assetCode3} disabled className="hidden" />
@@ -517,18 +445,6 @@ const handleChangeAmountRow = (
             <div className="px-3 pb-3 pt-2">
               {/* タブ行 */}
               <div className="flex border-b border-[#7a9bc4] text-[14px]">
-                <GuidedFocus
-                  active={showBasicTabGuide}
-                  message="基本情報を入力します。"
-                  placement="right"
-                  fullWidth={false}
-                  showClickHint={false}
-                  onNext={() => {
-                    applyGuideBasicInfo()
-                    setGuideStep("accountsTab")
-                  }}
-                  nextLabel="次へ"
-                >
                   <button
                     type="button"
                     onClick={() => setActiveTab("basic")}
@@ -540,22 +456,10 @@ const handleChangeAmountRow = (
                   >
                     基本情報
                   </button>
-                </GuidedFocus>
 
-                <GuidedFocus
-                  active={showAccountsTabGuide}
-                  message="対応する科目を選択します。"
-                  placement="top"
-                  fullWidth={false}
-                >
                   <button
                     type="button"
-                    onClick={() => {
-                      setActiveTab("accounts")
-                      if (showAccountsTabGuide) {
-                        setGuideStep("accountingRef")
-                      }
-                    }}
+                    onClick={() => setActiveTab("accounts")}
                     className={`px-10 py-1 bg-white border-t border-l border-r border-[#7a9bc4] ${
                       activeTab === "accounts"
                         ? "border-b-0 font-bold"
@@ -564,7 +468,6 @@ const handleChangeAmountRow = (
                   >
                     対応科目
                   </button>
-                </GuidedFocus>
 
                 {isType3 && (
                   <button
@@ -910,10 +813,6 @@ const handleChangeAmountRow = (
                     onAddRow={handleAddRow}
                     onDeleteRow={handleDeleteRow}
                     onChangeRow={handleChangeAccountRow}
-                    guideAccountingRefActive={showAccountingRefGuide}
-                    guideSubjectRefActive={showSubjectRefGuide}
-                    onGuideAccountingRefClick={() => setGuideStep("subjectRef")}
-                    onGuideSubjectRefClick={() => setGuideStep("finalEnter")}
                   />
                 )}
 
@@ -939,19 +838,6 @@ const handleChangeAmountRow = (
         onClose={() => setIsPdfPreviewOpen(false)}
         src="/pdf/note_restricted_assets_r6_sample.pdf"
         title="使途拘束資産 注記（サンプル）"
-        tutorialActive
-        tutorialMessage="登録した科目の増減を集計して、注記へ自動転記します。"
-        tutorialPrimaryLabel="変更点ガイドへ"
-        tutorialOnPrimary={() => {
-          setIsPdfPreviewOpen(false)
-          openTutorialMenu()
-        }}
-        tutorialSecondaryLabel="終了"
-        tutorialOnSecondary={() => {
-          setIsPdfPreviewOpen(false)
-          stopTutorial()
-          router.push("/home")
-        }}
       />
     </main>
   )

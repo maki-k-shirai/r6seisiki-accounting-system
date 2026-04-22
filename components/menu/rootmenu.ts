@@ -201,6 +201,38 @@ export const rootMenu: SideMenuNode[] = [
     displayName: "5",
     label: "決算処理",
     icon: "folder",
+    children: [
+      {
+        id: "5-3",
+        displayName: "3",
+        label: "決算帳票",
+        icon: "folder",
+        children: [
+          {
+            id: "5-3-1",
+            displayName: "1",
+            label: "貸借対照表",
+            icon: "folder",
+            children: [
+              {
+                id: "5-3-1-5",
+                displayName: "5",
+                label: "使途拘束資産内訳",
+                icon: "document",
+                href: "/restricted-assets-report",
+              },
+            ],
+          },
+          {
+            id: "5-3-2",
+            displayName: "2",
+            label: "関連当事者への取引チェック",
+            icon: "document",
+            href: "/related-party-check",
+          },
+        ],
+      },
+    ],
   },
 
   // 6. 締切処理
